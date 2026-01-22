@@ -90,6 +90,11 @@ function Write-VersionStamp($skillPath, $skillName, $profileName, $repoCommit) {
   $stamp | ConvertTo-Json -Depth 10 | Set-Content -Encoding UTF8 $stampPath
 }
 
+function Write-Utf8NoBomFile($path, $content) {
+  $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+  [System.IO.File]::WriteAllText($path, $content, $utf8NoBom)
+}
+
 try {
   $skillSource = Join-Path (Join-Path $SourceRoot "skills") $SkillName
   $skillDest = Join-Path $TargetRoot $SkillName
@@ -113,9 +118,22 @@ try {
       $content = Get-Content $_.FullName -Raw -ErrorAction SilentlyContinue
       if ($content -and $content.Contains("__SKILLS_ROOT__")) {
         $newContent = $content.Replace("__SKILLS_ROOT__", $TargetRoot)
-        $newContent | Set-Content -Encoding UTF8 $_.FullName
+        if ($_.Name -eq "SKILL.md") {
+          Write-Utf8NoBomFile $_.FullName $newContent
+        } else {
+          $newContent | Set-Content -Encoding UTF8 $_.FullName
+        }
         Write-Host "  Patched: $($_.Name)"
       }
+    }
+  }
+
+  # Codex requires YAML front matter at byte 0; ensure SKILL.md has no BOM
+  $skillMdPath = Join-Path $skillDest "SKILL.md"
+  if (Test-Path $skillMdPath) {
+    $skillMdContent = Get-Content $skillMdPath -Raw -ErrorAction SilentlyContinue
+    if ($skillMdContent) {
+      Write-Utf8NoBomFile $skillMdPath $skillMdContent
     }
   }
 

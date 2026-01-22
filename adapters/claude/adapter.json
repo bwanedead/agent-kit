@@ -1,0 +1,9 @@
+{
+  "name": "claude",
+  "description": "Adapter for Claude Code skills installation",
+  "target_path": "~/.claude/skills",
+  "placeholders": {
+    "__SKILLS_ROOT__": "{{target_path}}"
+  },
+  "supported_platforms": ["windows", "darwin", "linux"]
+}

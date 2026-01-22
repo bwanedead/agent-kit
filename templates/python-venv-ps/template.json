@@ -1,0 +1,12 @@
+{
+  "name": "python-venv-ps",
+  "description": "Python script with PowerShell launcher and isolated venv",
+  "placeholders": [
+    "__SKILL_NAME__",
+    "__SKILL_DESCRIPTION__",
+    "__ARG_HINT__",
+    "__SKILL_ROOT__"
+  ],
+  "default_deps": [],
+  "requires": ["python"]
+}

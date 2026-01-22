@@ -1,0 +1,84 @@
+# Agent Kit .gitignore
+
+# =============================================================================
+# IMPORTANT: .claude/ is NOT ignored - it contains project settings
+# =============================================================================
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+*.egg-info/
+*.egg
+.eggs/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments (these live in installed skills, not canonical)
+.venv/
+
+# IDE/Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+._*
+
+# Logs and output (runtime artifacts)
+logs/
+output/
+*.log
+
+# Testing/Coverage
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.tox/
+coverage/
+
+# Build artifacts
+dist/
+build/
+out/
+
+# Node (if ever needed)
+node_modules/
+
+# Secrets (never commit these)
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+credentials.json
+secrets.json
+
+# Misc
+*.bak
+*.tmp
+*.temp
+.cache/
+
+# =============================================================================
+# DO NOT ADD:
+# - .claude/  (project settings should be committed)
+# - *.local   (too broad, catches .claude/settings.local.json)
+# =============================================================================

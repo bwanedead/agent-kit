@@ -1,0 +1,9 @@
+{
+  "name": "codex",
+  "description": "Adapter for Codex CLI skills installation",
+  "target_path": "~/.codex/skills",
+  "placeholders": {
+    "__SKILLS_ROOT__": "{{target_path}}"
+  },
+  "supported_platforms": ["windows", "darwin", "linux"]
+}

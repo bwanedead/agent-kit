@@ -1,0 +1,10 @@
+{
+  "name": "minimal",
+  "description": "Minimal profile with just the skill factory for creating new skills",
+  "skills": [
+    {
+      "name": "skill-factory",
+      "scope": "global"
+    }
+  ]
+}

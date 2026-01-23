@@ -150,7 +150,7 @@ def main():
     ap.add_argument("--recursive", action="store_true", help="Recurse into subfolders")
     ap.add_argument("--force", action="store_true", help="Overwrite existing splices")
     ap.add_argument("--organize", action="store_true", help="Move successfully-split originals into ./double (mirrors structure).")
-    ap.add_argument("--mode", choices=["auto", "vertical", "horizontal"], default="auto", help="Split direction. auto chooses based on aspect ratio.")
+    ap.add_argument("--mode", choices=["auto", "vertical", "horizontal"], default="auto", help="Split direction. auto splits only landscape pages (vertical split) by aspect ratio.")
     ap.add_argument("--search", type=float, default=0.12, help="Search window fraction around center for gutter detection.")
     ap.add_argument("--band", type=float, default=0.01, help="Band thickness fraction used to score gutter ink.")
 
@@ -184,13 +184,10 @@ def main():
         try:
             with Image.open(img_path) as im:
                 w, h = im.size
-
                 mode = args.mode
                 if mode == "auto":
                     if is_probably_double_page(w, h):
                         mode = "vertical"
-                    elif (h / max(w, 1)) >= 1.35:
-                        mode = "horizontal"
                     else:
                         print(f"skipped_single   | wrote    0 | {img_path}")
                         skipped_single += 1

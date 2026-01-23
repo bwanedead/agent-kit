@@ -18,6 +18,9 @@ Use the Agent Kit installer to sync skills to supported CLIs after creation.
 # Create a new skill (in agent-kit/skills/)
 /skill-factory --name my-tool --desc "Does something useful" --deps "requests"
 
+# Create an instruction-only skill (no scripts)
+/skill-factory --name my-note --desc "Quick instructions" --template instructions-only
+
 # Create and immediately install to all active adapters
 /skill-factory --name my-tool --desc "Does something useful" --install
 

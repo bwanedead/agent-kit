@@ -5,6 +5,10 @@
     {
       "name": "skill-factory",
       "scope": "global"
+    },
+    {
+      "name": "profile-update",
+      "scope": "global"
     }
   ]
 }

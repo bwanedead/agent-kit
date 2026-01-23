@@ -1,6 +1,6 @@
 ---
 name: splice-deed
-description: Split double-page deed images into single-page images (writes splices to a subfolder; originals untouched by default).
+description: Split landscape double-page deed images into single-page images (writes splices to a subfolder; originals untouched by default).
 allowed-tools: Bash
 disable-model-invocation: true
 argument-hint: "[folder] [--out splice] [--recursive] [--force] [--organize] [--mode auto|vertical|horizontal] [--search 0.12] [--band 0.01]"

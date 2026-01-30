@@ -30,27 +30,21 @@ DEFAULT_RALPH_ROOT = r"C:\projects\ralph"
 CONFIG_DIR_NAME = "ralph"
 CONFIG_FILE_NAME = "ralph-root.txt"
 
-TEMPLATE_FILES = [
-    "COMPATIBILITY_NOTES.md",
-    "CONTROL_PLANE.md",
+# Required templates that must exist for doctor validation
+REQUIRED_TEMPLATES = [
     "HOW_RALPH_WORKS.md",
-    "INVOKE_RALPH.md",
-    "LOOP_STATE_TEMPLATE.json",
-    "PRD_JSON_SCHEMA.md",
-    "PRD_JSON_TEMPLATE.json",
-    "PRD_TEMPLATE.md",
-    "PREP_AGENT_CHECKLIST.md",
     "PROMPT_TEMPLATE.md",
-    "REVIEW_TEMPLATE.md",
-    "RUN_CHECKLIST.md",
-    "RUN_SKELETON.md",
-    "RUN_SKELETON_CONTRACT.md",
-    "STEERING_TEMPLATE.md",
-    "STORY_GUIDELINES.md",
-    "SUMMARY_TEMPLATE.md",
-    "TRANSCRIPT_TEMPLATE.md",
-    "VISION_TEMPLATE.md",
+    "PRD_TEMPLATE.md",
+    "PRD_JSON_TEMPLATE.json",
 ]
+
+
+def get_template_files(ralph_root: Path) -> list[str]:
+    """Dynamically discover all template files from canonical source."""
+    templates_dir = ralph_root / "templates"
+    if not templates_dir.exists():
+        return []
+    return [f.name for f in templates_dir.iterdir() if f.is_file()]
 
 
 # =============================================================================
@@ -173,7 +167,7 @@ def is_repo_dirty(path: Path) -> bool:
     return False
 
 
-def create_meta(ralph_root: Path) -> dict:
+def create_meta(ralph_root: Path, template_count: int) -> dict:
     """Create metadata for .ralph-meta.json."""
     version_info = get_source_version(ralph_root)
     return {
@@ -181,7 +175,7 @@ def create_meta(ralph_root: Path) -> dict:
         "sourceRoot": str(ralph_root.resolve()),
         "timestamp": datetime.utcnow().isoformat() + "Z",
         "templateVersion": version_info.get("version", "unknown"),
-        "templateCount": version_info.get("templateCount", len(TEMPLATE_FILES)),
+        "templateCount": version_info.get("templateCount", template_count),
     }
 
 
@@ -237,17 +231,15 @@ def cmd_init(target_path: str) -> int:
     templates_dir.mkdir(parents=True, exist_ok=True)
     runs_dir.mkdir(parents=True, exist_ok=True)
 
-    # Copy templates
+    # Copy templates (dynamically discovered)
     source_templates = ralph_root / "templates"
+    template_files = get_template_files(ralph_root)
     copied = 0
-    for filename in TEMPLATE_FILES:
+    for filename in template_files:
         src = source_templates / filename
         dst = templates_dir / filename
-        if src.exists():
-            shutil.copy2(src, dst)
-            copied += 1
-        else:
-            print(f"  Warning: template not found: {filename}")
+        shutil.copy2(src, dst)
+        copied += 1
 
     # Copy README files
     src_readme = ralph_root / "README.md"
@@ -259,12 +251,12 @@ def cmd_init(target_path: str) -> int:
         shutil.copy2(src_runs_readme, runs_dir / "README.md")
 
     # Write metadata
-    meta = create_meta(ralph_root)
+    meta = create_meta(ralph_root, copied)
     write_meta(ralph_dir, meta)
 
     print("")
     print(f"Initialized Ralph successfully!")
-    print(f"  Templates copied: {copied}")
+    print(f"  Templates copied: {copied}/{len(template_files)}")
     print(f"  Version: {meta['templateVersion']}")
     print(f"  Commit: {meta['sourceCommit']}")
     print("")
@@ -316,14 +308,15 @@ def cmd_update(target_path: Optional[str], force: bool = False) -> int:
     templates_dir = ralph_dir / "templates"
     templates_dir.mkdir(parents=True, exist_ok=True)
 
+    # Dynamically discover and copy all templates
     source_templates = ralph_root / "templates"
+    template_files = get_template_files(ralph_root)
     updated = 0
-    for filename in TEMPLATE_FILES:
+    for filename in template_files:
         src = source_templates / filename
         dst = templates_dir / filename
-        if src.exists():
-            shutil.copy2(src, dst)
-            updated += 1
+        shutil.copy2(src, dst)
+        updated += 1
 
     # Update README (but not runs/README which user may have customized)
     src_readme = ralph_root / "README.md"
@@ -331,12 +324,12 @@ def cmd_update(target_path: Optional[str], force: bool = False) -> int:
         shutil.copy2(src_readme, ralph_dir / "README.md")
 
     # Write new metadata
-    meta = create_meta(ralph_root)
+    meta = create_meta(ralph_root, updated)
     write_meta(ralph_dir, meta)
 
     print("")
     print(f"Updated Ralph successfully!")
-    print(f"  Templates updated: {updated}")
+    print(f"  Templates updated: {updated}/{len(template_files)}")
     print(f"  New version: {meta['templateVersion']}")
     print(f"  Commit: {meta['sourceCommit']}")
     print(f"  runs/ directory: preserved")
@@ -366,29 +359,26 @@ def cmd_doctor(target_path: Optional[str]) -> int:
         print("Run: /ralph-services --init <path>")
         return 1
 
+    # Check canonical source early (needed for template comparison)
+    ralph_root = find_ralph_root()
+
     # Check templates directory
     templates_dir = ralph_dir / "templates"
     if not templates_dir.exists():
         issues.append("Missing templates/ directory")
     else:
         # Check for required templates
-        required = [
-            "HOW_RALPH_WORKS.md",
-            "PROMPT_TEMPLATE.md",
-            "PRD_TEMPLATE.md",
-            "PRD_JSON_TEMPLATE.json",
-        ]
-        for filename in required:
+        for filename in REQUIRED_TEMPLATES:
             if not (templates_dir / filename).exists():
                 issues.append(f"Missing required template: {filename}")
 
-        # Check for other templates
-        missing = []
-        for filename in TEMPLATE_FILES:
-            if not (templates_dir / filename).exists():
-                missing.append(filename)
-        if missing and len(missing) < len(TEMPLATE_FILES):
-            warnings.append(f"Missing {len(missing)} optional templates")
+        # Check for templates missing compared to canonical
+        if ralph_root:
+            canonical_templates = set(get_template_files(ralph_root))
+            local_templates = set(f.name for f in templates_dir.iterdir() if f.is_file())
+            missing = canonical_templates - local_templates
+            if missing:
+                warnings.append(f"Missing {len(missing)} templates from canonical: {', '.join(sorted(missing)[:3])}{'...' if len(missing) > 3 else ''}")
 
     # Check runs directory
     runs_dir = ralph_dir / "runs"
@@ -406,7 +396,6 @@ def cmd_doctor(target_path: Optional[str]) -> int:
         print("")
 
     # Check canonical source
-    ralph_root = find_ralph_root()
     if ralph_root:
         print(f"  Canonical source: {ralph_root}")
         source_version = get_source_version(ralph_root)

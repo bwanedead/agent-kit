@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(pwsh:*)"
+      "Bash(pwsh:*)",
+      "Bash(powershell -NoProfile -ExecutionPolicy Bypass -File C:\\\\Users\\\\dawki\\\\.claude\\\\skills\\\\skill-factory\\\\scripts\\\\run.ps1:*)"
     ]
   }
 }

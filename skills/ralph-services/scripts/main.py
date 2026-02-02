@@ -47,6 +47,49 @@ def get_template_files(ralph_root: Path) -> list[str]:
     return [f.name for f in templates_dir.iterdir() if f.is_file()]
 
 
+# Directories to exclude when syncing (preserve local data)
+EXCLUDED_DIRS = {"runs", ".git"}
+
+# Files to exclude when syncing
+EXCLUDED_FILES = {".gitignore"}
+
+
+def sync_directory(src: Path, dst: Path, exclude_dirs: set[str], exclude_files: set[str]) -> dict:
+    """
+    Recursively sync src directory to dst, excluding specified dirs/files.
+    Returns stats dict with counts.
+    """
+    stats = {"files_copied": 0, "dirs_created": 0, "skipped": []}
+
+    # Ensure destination exists
+    if not dst.exists():
+        dst.mkdir(parents=True, exist_ok=True)
+        stats["dirs_created"] += 1
+
+    for item in src.iterdir():
+        if item.name in exclude_dirs and item.is_dir():
+            stats["skipped"].append(str(item.relative_to(src)))
+            continue
+        if item.name in exclude_files and item.is_file():
+            stats["skipped"].append(str(item.relative_to(src)))
+            continue
+
+        dst_item = dst / item.name
+
+        if item.is_dir():
+            # Recursively sync subdirectory
+            sub_stats = sync_directory(item, dst_item, exclude_dirs, exclude_files)
+            stats["files_copied"] += sub_stats["files_copied"]
+            stats["dirs_created"] += sub_stats["dirs_created"]
+            stats["skipped"].extend(sub_stats["skipped"])
+        else:
+            # Copy file
+            shutil.copy2(item, dst_item)
+            stats["files_copied"] += 1
+
+    return stats
+
+
 # =============================================================================
 # DISCOVERY
 # =============================================================================
@@ -224,39 +267,24 @@ def cmd_init(target_path: str) -> int:
     print(f"Initializing Ralph in: {target}")
     print(f"  Source: {ralph_root}")
 
-    # Create directory structure
-    templates_dir = ralph_dir / "templates"
+    # Sync entire canonical structure (excluding runs/ and .git/)
+    stats = sync_directory(ralph_root, ralph_dir, EXCLUDED_DIRS, EXCLUDED_FILES)
+
+    # Create empty runs directory with README from canonical
     runs_dir = ralph_dir / "runs"
-
-    templates_dir.mkdir(parents=True, exist_ok=True)
     runs_dir.mkdir(parents=True, exist_ok=True)
-
-    # Copy templates (dynamically discovered)
-    source_templates = ralph_root / "templates"
-    template_files = get_template_files(ralph_root)
-    copied = 0
-    for filename in template_files:
-        src = source_templates / filename
-        dst = templates_dir / filename
-        shutil.copy2(src, dst)
-        copied += 1
-
-    # Copy README files
-    src_readme = ralph_root / "README.md"
-    if src_readme.exists():
-        shutil.copy2(src_readme, ralph_dir / "README.md")
-
     src_runs_readme = ralph_root / "runs" / "README.md"
     if src_runs_readme.exists():
         shutil.copy2(src_runs_readme, runs_dir / "README.md")
 
     # Write metadata
-    meta = create_meta(ralph_root, copied)
+    meta = create_meta(ralph_root, stats["files_copied"])
     write_meta(ralph_dir, meta)
 
     print("")
     print(f"Initialized Ralph successfully!")
-    print(f"  Templates copied: {copied}/{len(template_files)}")
+    print(f"  Files copied: {stats['files_copied']}")
+    print(f"  Directories created: {stats['dirs_created']}")
     print(f"  Version: {meta['templateVersion']}")
     print(f"  Commit: {meta['sourceCommit']}")
     print("")
@@ -268,7 +296,7 @@ def cmd_init(target_path: str) -> int:
 
 
 def cmd_update(target_path: Optional[str], force: bool = False) -> int:
-    """Update Ralph templates (preserves runs/)."""
+    """Update Ralph structure (preserves runs/)."""
     target = Path(target_path).resolve() if target_path else Path.cwd()
     ralph_dir = target / "ralph"
 
@@ -304,32 +332,17 @@ def cmd_update(target_path: Optional[str], force: bool = False) -> int:
     if old_meta:
         print(f"  Current version: {old_meta.get('templateVersion', 'unknown')}")
 
-    # Update templates only (preserve runs/)
-    templates_dir = ralph_dir / "templates"
-    templates_dir.mkdir(parents=True, exist_ok=True)
-
-    # Dynamically discover and copy all templates
-    source_templates = ralph_root / "templates"
-    template_files = get_template_files(ralph_root)
-    updated = 0
-    for filename in template_files:
-        src = source_templates / filename
-        dst = templates_dir / filename
-        shutil.copy2(src, dst)
-        updated += 1
-
-    # Update README (but not runs/README which user may have customized)
-    src_readme = ralph_root / "README.md"
-    if src_readme.exists():
-        shutil.copy2(src_readme, ralph_dir / "README.md")
+    # Sync entire canonical structure (excluding runs/ and .git/)
+    # This preserves the local runs/ directory completely
+    stats = sync_directory(ralph_root, ralph_dir, EXCLUDED_DIRS, EXCLUDED_FILES)
 
     # Write new metadata
-    meta = create_meta(ralph_root, updated)
+    meta = create_meta(ralph_root, stats["files_copied"])
     write_meta(ralph_dir, meta)
 
     print("")
     print(f"Updated Ralph successfully!")
-    print(f"  Templates updated: {updated}/{len(template_files)}")
+    print(f"  Files synced: {stats['files_copied']}")
     print(f"  New version: {meta['templateVersion']}")
     print(f"  Commit: {meta['sourceCommit']}")
     print(f"  runs/ directory: preserved")

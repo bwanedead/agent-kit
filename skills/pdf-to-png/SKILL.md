@@ -1,7 +1,7 @@
 ---
 name: pdf-to-png
 description: Convert PDFs in a folder into PNG sidecars (one PNG per page). Keeps PDFs untouched.
-allowed-tools: Bash
+allowed-tools: PowerShell
 disable-model-invocation: true
 argument-hint: "[folder] [--out png] [--dpi 200] [--recursive] [--force] [--organize]"
 ---

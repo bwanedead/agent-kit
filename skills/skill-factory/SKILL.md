@@ -1,7 +1,7 @@
 ---
 name: skill-factory
 description: Create new Agent Kit skills from templates and sync them to supported CLIs.
-allowed-tools: Bash
+allowed-tools: PowerShell
 disable-model-invocation: true
 argument-hint: "--name <skill-name> --desc \"...\" [--template <name>] [--deps \"pkg1,pkg2\"] [--install | --no-install] [--adapter <name> | --adapters \"a,b\"] [--add-to-profile <name> | --no-add] | --list-templates | --sync --profile <name> [--adapter <name> | --adapters \"a,b\"] | --help"
 ---

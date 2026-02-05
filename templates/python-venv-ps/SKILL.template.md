@@ -1,7 +1,7 @@
 ---
 name: __SKILL_NAME__
 description: __SKILL_DESCRIPTION__
-allowed-tools: Bash
+allowed-tools: PowerShell
 disable-model-invocation: true
 argument-hint: "__ARG_HINT__"
 ---

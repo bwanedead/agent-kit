@@ -1,7 +1,7 @@
 ---
 name: ralph-services
 description: Bootstrap, validate, and update Ralph workflow infrastructure in projects
-allowed-tools: Bash
+allowed-tools: PowerShell
 disable-model-invocation: true
 argument-hint: "--init . | --init <path> | --update | --doctor | --print-root | --set-root <path>"
 ---
